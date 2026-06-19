@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.cluster import DBSCAN
 import hdbscan
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 from geopy.distance import geodesic
 
 class HotspotDetector:
@@ -23,11 +23,11 @@ class HotspotDetector:
         if len(points) < min_samples:
             return []
         if self.algorithm == "dbscan":
-            dist_matrix = self._compute_distance_matrix(points)
+            dist_matrix: Any = self._compute_distance_matrix(points)
             clusterer = DBSCAN(eps=eps, min_samples=min_samples, metric="precomputed")
             labels = clusterer.fit_predict(dist_matrix)
         else:
-            coords_rad = np.radians(points)
+            coords_rad: Any = np.radians(points)
             clusterer = hdbscan.HDBSCAN(min_cluster_size=min_samples, metric='haversine', alpha=0.5)
             labels = clusterer.fit_predict(coords_rad)
         clusters = {}

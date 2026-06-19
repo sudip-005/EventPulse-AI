@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 class ResourceRecommender:
     def __init__(self):
@@ -7,7 +7,7 @@ class ResourceRecommender:
         self.marshals_per_500_attendees = 1
 
     def recommend_resources(self, event: Dict, hotspots: List[Dict], forecasts: List[Dict]) -> Dict:
-        recommendations = {
+        recommendations: Dict[str, Any] = {
             "police": self._recommend_police(event, hotspots),
             "barricades": self._recommend_barricades(event, hotspots),
             "marshals": self._recommend_marshals(event, hotspots),

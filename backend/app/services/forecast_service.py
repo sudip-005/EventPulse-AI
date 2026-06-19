@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 from app.models.event import Event
 from app.models.road import Road
@@ -21,7 +21,7 @@ class ForecastService:
             raise ValueError("Event not found")
         roads = self.db.query(Road).all()
         forecasts = []
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for hour in range(1, horizon_hours + 1):
             forecast_time = now + timedelta(hours=hour)
             for road in roads[:10]:  # Limit for demo

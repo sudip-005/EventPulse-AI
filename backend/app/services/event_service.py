@@ -1,11 +1,11 @@
 import math
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 from app.schemas.event import EventCreate
 
 class EventService:
     @staticmethod
-    def calculate_impact_score(event: EventCreate) -> float:
+    def calculate_impact_score(event: Any) -> float:
         score = 0.0
         if event.estimated_attendance:
             score += min(math.log(event.estimated_attendance + 1) / 10, 0.5)
@@ -23,7 +23,7 @@ class EventService:
         return min(score * 100, 100)
 
     @staticmethod
-    def calculate_risk_score(event: EventCreate) -> float:
+    def calculate_risk_score(event: Any) -> float:
         risk = 0.0
         if event.estimated_attendance and event.estimated_attendance > 10000:
             risk += 0.3

@@ -46,10 +46,10 @@ async def update_event(event_id: str, event_in: EventUpdate, db: Session = Depen
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    for key, value in event_in.dict(exclude_unset=True).items():
+    for key, value in event_in.model_dump(exclude_unset=True).items():
         setattr(event, key, value)
     # Recalculate scores if attendance/time changed
-    if "estimated_attendance" in event_in.dict(exclude_unset=True) or "start_time" in event_in.dict(exclude_unset=True):
+    if "estimated_attendance" in event_in.model_dump(exclude_unset=True) or "start_time" in event_in.model_dump(exclude_unset=True):
         event.impact_score = EventService.calculate_impact_score(event)
         event.risk_score = EventService.calculate_risk_score(event)
     db.add(event)

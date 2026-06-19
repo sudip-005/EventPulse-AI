@@ -2,18 +2,19 @@ from sqlalchemy import Column, String, JSON, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
 
 class Simulation(Base):
     __tablename__ = "simulations"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    event_id = Column(UUID(as_uuid=True), nullable=False)
-    name = Column(String(255))
-    scenario_params = Column(JSON, nullable=False)
-    predicted_congestion = Column(JSON)
-    predicted_hotspots = Column(JSON)
-    recommendations = Column(JSON)
-    status = Column(String(20), default="pending")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    completed_at = Column(DateTime(timezone=True))
+    id: Any = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_id: Any = Column(UUID(as_uuid=True), nullable=False)
+    name: Any = Column(String(255))
+    scenario_params: Any = Column(JSON, nullable=False)
+    predicted_congestion: Any = Column(JSON)
+    predicted_hotspots: Any = Column(JSON)
+    recommendations: Any = Column(JSON)
+    status: Any = Column(String(20), default="pending")
+    created_at: Any = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    completed_at: Any = Column(DateTime(timezone=True))
