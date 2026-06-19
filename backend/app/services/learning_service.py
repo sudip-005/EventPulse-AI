@@ -11,21 +11,21 @@ class LearningService:
         self.db = db
 
     async def record_actual_outcome(self, event_id: str) -> dict:
-        # In real life, would fetch actual traffic data after event
-        # For demo, simulate random actual congestion
+        # In real life, would fetch actual data after event
+        # For demo, simulate random actual impact (within +/-20%)
         predictions = self.db.query(Prediction).filter(Prediction.event_id == event_id).all()
         for pred in predictions:
-            # Simulate actual congestion (within +/-20%)
-            actual = pred.congestion_score * (0.8 + 0.4 * random.random())
-            error = abs(pred.congestion_score - actual)
+            pred_impact = pred.impact_score if pred.impact_score is not None else 45.0
+            actual = pred_impact * (0.8 + 0.4 * random.random())
+            error = abs(pred_impact - actual)
             record = LearningRecord(
                 event_id=event_id,
                 prediction_id=pred.id,
-                predicted_congestion=pred.congestion_score,
-                actual_congestion=actual,
+                predicted_impact=pred_impact,
+                actual_impact=actual,
                 error=error,
                 mae=error,
-                rmse=error*1.2,
+                rmse=error * 1.2,
                 resource_effectiveness=0.7 + 0.3 * random.random(),
                 model_version=pred.model_version or "v1.0"
             )
@@ -39,8 +39,8 @@ class LearningService:
             id=str(r.id),
             event_id=str(r.event_id),
             prediction_id=str(r.prediction_id),
-            predicted_congestion=r.predicted_congestion,
-            actual_congestion=r.actual_congestion,
+            predicted_impact=r.predicted_impact,
+            actual_impact=r.actual_impact,
             error=r.error,
             mae=r.mae,
             rmse=r.rmse,
@@ -53,5 +53,13 @@ class LearningService:
         from app.ml.trainer import XGBoostTrainer
         trainer = XGBoostTrainer()
         # Would need to load historical data
-        # For demo, return
+        # For demo, trigger train on synthetic dataset
+        df = load_synthetic_and_train(self.db)
         return {"message": "Retraining triggered", "model_version": model_version or "v1.1"}
+
+def load_synthetic_and_train(db: Session) -> dict:
+    from app.ml.data_loader import load_training_data
+    from app.ml.trainer import XGBoostTrainer
+    df = load_training_data(db)
+    trainer = XGBoostTrainer()
+    return trainer.train(df)

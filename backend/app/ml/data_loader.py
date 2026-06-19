@@ -1,31 +1,34 @@
+from __future__ import annotations
+
 import pandas as pd
+import numpy as np
 from sqlalchemy.orm import Session
-from app.models.traffic import TrafficData
-from app.models.road import Road
+from datetime import datetime, timedelta
 
 def load_training_data(db: Session) -> pd.DataFrame:
-    # Query historical traffic and join with roads, events
-    # For demo, return synthetic data
-    import numpy as np
+    """
+    Loads historical event/incident records for training.
+    For demonstration, returns a synthetic dataset aligning with the Astram dataset schema.
+    """
     np.random.seed(42)
+    size = 1000
+    
+    # Generate temporal dates
+    start_dates = [datetime.now() - timedelta(days=np.random.randint(1, 30), hours=np.random.randint(0, 24)) for _ in range(size)]
+    resolved_dates = [start_dates[i] + timedelta(minutes=np.random.normal(120, 60)) for i in range(size)]
+
+    
     df = pd.DataFrame({
-        "historical_speed": np.random.normal(40, 10, 1000),
-        "historical_volume": np.random.normal(500, 100, 1000),
-        "occupancy": np.random.uniform(0.2, 0.8, 1000),
-        "road_capacity": np.random.normal(1000, 200, 1000),
-        "hour": np.random.randint(0, 24, 1000),
-        "day_of_week": np.random.randint(0, 7, 1000),
-        "month": np.random.randint(1, 13, 1000),
-        "is_weekend": np.random.randint(0, 2, 1000),
-        "is_rush_hour": np.random.randint(0, 2, 1000),
-        "event_impact_score": np.random.uniform(0, 100, 1000),
-        "event_risk_score": np.random.uniform(0, 100, 1000),
-        "estimated_attendance": np.random.normal(5000, 2000, 1000),
-        "event_duration_hours": np.random.uniform(2, 8, 1000),
-        "temperature": np.random.normal(25, 5, 1000),
-        "precipitation": np.random.exponential(0.5, 1000),
-        "visibility_km": np.random.uniform(5, 15, 1000),
-        "is_raining": np.random.randint(0, 2, 1000),
-        "congestion_score": np.random.uniform(0, 100, 1000)
+        "start_datetime": start_dates,
+        "resolved_datetime": resolved_dates,
+        "estimated_attendance": np.random.normal(5000, 2000, size),
+        "event_type": np.random.choice(["concert", "sports", "festival", "accident", "construction", "protest", "marathon", "other"], size),
+        "priority": np.random.choice(["Low", "Medium", "High", "Critical"], size, p=[0.3, 0.4, 0.2, 0.1]),
+        "requires_road_closure": np.random.choice([True, False], size, p=[0.2, 0.8]),
+        "temperature": np.random.normal(25, 5, size),
+        "precipitation": np.random.exponential(0.5, size),
+        "visibility_km": np.random.uniform(5, 15, size),
+        "is_raining": np.random.choice([0, 1], size)
     })
+    
     return df

@@ -11,10 +11,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models.event import Event
 from app.models.road import Road
-from app.models.traffic import TrafficData
+from app.models.risk_assessment import RiskAssessment
 from app.core.config import settings
 
-engine = create_engine(settings.DATABASE_URL)
+db_url = settings.DATABASE_URL
+if not db_url:
+    db_url = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_SERVER}/{settings.POSTGRES_DB}"
+
+engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
 
 def generate_roads():
@@ -30,7 +34,7 @@ def generate_roads():
                 road_id=road_id,
                 name=f"Road {i}-{j}",
                 geometry=f"LINESTRING({base_lon + j*0.001} {base_lat + i*0.001}, {base_lon + j*0.001 + 0.001} {base_lat + i*0.001})",
-                length_meters=100,
+                length_meters=100.0,
                 speed_limit_kmh=50,
                 capacity=800 + random.randint(0, 400),
                 lanes=2,
@@ -46,7 +50,7 @@ def seed_data():
     db = Session()
     try:
         # Clear existing data (optional)
-        db.query(TrafficData).delete()
+        db.query(RiskAssessment).delete()
         db.query(Event).delete()
         db.query(Road).delete()
         
@@ -74,28 +78,22 @@ def seed_data():
         db.commit()
         print(f"Created event: {event.name} (id: {event.id})")
         
-        # Generate traffic data for last 7 days
-        for road in roads[:20]:  # only some roads
-            for day in range(7):
-                base_time = datetime.now() - timedelta(days=day)
-                for hour in range(0, 24, 2):
-                    ts = base_time.replace(hour=hour, minute=0, second=0)
-                    speed = 40 + random.gauss(0, 10)
-                    volume = 400 + random.gauss(0, 100)
-                    traffic = TrafficData(
-                        road_id=road.road_id,
-                        timestamp=ts,
-                        speed_kmh=max(10, min(80, speed)),
-                        volume=max(50, volume),
-                        occupancy=random.uniform(0.2, 0.8),
-                        congestion_level=int(random.uniform(0, 5)),
-                        weather_condition=random.choice(["clear", "cloudy", "rain"]),
-                        temperature=random.uniform(20, 30),
-                        precipitation=random.uniform(0, 5)
-                    )
-                    db.add(traffic)
+        # Create sample risk assessment
+        assessment = RiskAssessment(
+            event_id=event.id,
+            impact_score=75.0,
+            impact_level="HIGH",
+            risk_score=60.0,
+            expected_duration_minutes=300.0,
+            closure_probability=0.3,
+            top_factor_1="estimated_attendance",
+            top_factor_2="priority_encoded",
+            top_factor_3="is_rush_hour",
+            model_version="v1.0"
+        )
+        db.add(assessment)
         db.commit()
-        print("Traffic data seeded")
+        print("Risk assessment seeded")
         
     except Exception as e:
         print(f"Error: {e}")

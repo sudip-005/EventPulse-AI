@@ -1,6 +1,6 @@
 from .event import Event
 from .road import Road
-from .traffic import TrafficData
+from .risk_assessment import RiskAssessment
 from .prediction import Prediction
 from .hotspot import Hotspot
 from .simulation import Simulation

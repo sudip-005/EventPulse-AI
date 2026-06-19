@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from sqlalchemy import func
+from typing import Dict, Any, Tuple
 from app.simulation.scenario_engine import ScenarioSimulator
 from app.models.simulation import Simulation
 from app.models.event import Event
@@ -16,6 +17,8 @@ class SimulationService:
         event = self.db.query(Event).filter(Event.id == event_id).first()
         if not event:
             raise ValueError("Event not found")
+            
+        event_lat, event_lon = self._get_event_coordinates(event)
         # Build base event dict
         base_event = {
             "id": str(event.id),
@@ -26,7 +29,7 @@ class SimulationService:
             "risk_score": event.risk_score,
             "start_time": event.start_time,
             "end_time": event.end_time,
-            "location": (event.location.x, event.location.y)  # simplified
+            "location": (event_lat, event_lon)
         }
         # Simulate
         result = self.simulator.simulate_scenario(
@@ -62,3 +65,19 @@ class SimulationService:
 
     async def get_simulation(self, sim_id: str) -> Simulation:
         return self.db.query(Simulation).filter(Simulation.id == sim_id).first()
+
+    def _get_event_coordinates(self, event: Event) -> Tuple[float, float]:
+        try:
+            res = self.db.query(func.ST_Y(event.location), func.ST_X(event.location)).filter(Event.id == event.id).first()
+            if res and res[0] is not None and res[1] is not None:
+                return float(res[0]), float(res[1])
+        except Exception:
+            pass
+            
+        try:
+            if hasattr(event.location, 'y') and hasattr(event.location, 'x'):
+                return float(event.location.y), float(event.location.x)
+        except Exception:
+            pass
+            
+        return 19.0760, 72.8777

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Boolean, String, DateTime
+from sqlalchemy import Column, Float, Boolean, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
 import uuid
@@ -9,10 +9,10 @@ class LearningRecord(Base):
     __tablename__ = "learning_records"
     
     id: Any = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    event_id: Any = Column(UUID(as_uuid=True), nullable=False)
+    event_id: Any = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
     prediction_id: Any = Column(UUID(as_uuid=True))
-    predicted_congestion: Any = Column(Float)
-    actual_congestion: Any = Column(Float)
+    predicted_impact: Any = Column(Float)
+    actual_impact: Any = Column(Float)
     error: Any = Column(Float)
     mae: Any = Column(Float)
     rmse: Any = Column(Float)

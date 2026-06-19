@@ -6,8 +6,8 @@ class LearningRecordResponse(BaseModel):
     id: str
     event_id: str
     prediction_id: str
-    predicted_congestion: float
-    actual_congestion: float
+    predicted_impact: float
+    actual_impact: float
     error: float
     mae: float
     rmse: float

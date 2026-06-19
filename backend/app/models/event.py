@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Text, DateTime, Float, Integer, Enum
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from geoalchemy2 import Geography
 from app.core.database import Base
 import uuid
@@ -23,3 +24,16 @@ class Event(Base):
     status: Any = Column(String(20), default="scheduled")
     created_at: Any = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Any = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    risk_assessments = relationship(
+        "RiskAssessment",
+        back_populates="event",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    predictions = relationship(
+        "Prediction",
+        back_populates="event",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
