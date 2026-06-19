@@ -5,6 +5,7 @@ from app.models.hotspot import Hotspot
 from app.schemas.hotspot import HotspotResponse
 from app.services.forecast_service import ForecastService
 import asyncio
+import random
 
 class HotspotService:
     def __init__(self, db: Session):

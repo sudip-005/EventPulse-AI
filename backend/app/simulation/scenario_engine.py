@@ -3,6 +3,7 @@ from typing import Dict, List, Any
 from app.services.forecast_service import ForecastService
 from app.geospatial.clustering import HotspotDetector
 from app.recommendations.resource_allocator import ResourceRecommender
+import numpy as np
 
 class ScenarioSimulator:
     def __init__(self):

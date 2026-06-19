@@ -2,7 +2,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 
 export function useSimulation() {
-    const [result, setResult] = useState(null);
+    const [result, setResult] = useState<any>(null);
     const run = async (eventId: string, params: any) => {
         const data = await apiFetch("/simulation/run", {
             method: "POST",
