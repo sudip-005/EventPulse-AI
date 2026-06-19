@@ -1,0 +1,33 @@
+
+---
+
+## Root: `Makefile`
+```makefile
+.PHONY: help up down logs backend frontend seed
+
+help:
+	@echo "Available commands:"
+	@echo "  up          Start all services with Docker Compose"
+	@echo "  down        Stop all services"
+	@echo "  logs        Show logs"
+	@echo "  backend     Run backend locally (without Docker)"
+	@echo "  frontend    Run frontend locally (without Docker)"
+	@echo "  seed        Seed database with sample data"
+
+up:
+	cd infrastructure/docker && docker-compose up -d
+
+down:
+	cd infrastructure/docker && docker-compose down
+
+logs:
+	cd infrastructure/docker && docker-compose logs -f
+
+backend:
+	cd backend && uvicorn app.main:app --reload
+
+frontend:
+	cd frontend && npm run dev
+
+seed:
+	cd infrastructure/scripts && python seed_data.py
