@@ -16,5 +16,5 @@ class Hotspot(Base):
     severity: Any = Column(Integer)
     affected_roads: Any = Column(JSON)
     radius_meters: Any = Column(Float)
-    impact_score: Any = Column(Float)
+    impact_score: Any = Column("congestion_score", Float)
     created_at: Any = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-06-21T01:17:00Z",
+  "dataset": "C:\\Users\\SUDIP MANNA\\Downloads\\Astram event data_anonymized - Astram event data_anonymizedb40ac87.csv",
+  "models": {
+    "impact_classifier": {
+      "model_type": "XGBClassifier",
+      "metric": "accuracy",
+      "value": 0.9325
+    },
+    "duration_regressor": {
+      "model_type": "XGBRegressor",
+      "metrics": {
+        "mean_absolute_error_minutes": 64.33527190725721,
+        "root_mean_squared_error_minutes": 115.08297653620787
+      }
+    }
+  }
+}

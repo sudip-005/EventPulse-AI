@@ -5,13 +5,56 @@ class ResourceRecommender:
         self.police_per_1000_attendees = 2
         self.barricades_per_1000_attendees = 5
         self.marshals_per_500_attendees = 1
+        
+        # Max capacity constraints
+        self.max_police_capacity = 50
+        self.max_barricades_capacity = 100
+        self.max_marshals_capacity = 30
 
     def recommend_resources(self, event: Dict, hotspots: List[Dict], forecasts: List[Dict]) -> Dict:
+        # Calculate raw allocations
+        police_recs = self._recommend_police(event, hotspots)
+        barricade_recs = self._recommend_barricades(event, hotspots)
+        marshal_recs = self._recommend_marshals(event, hotspots)
+        
+        warnings = []
+        
+        # Enforce capacity constraints on Police
+        total_police = sum(r["count"] for r in police_recs)
+        if total_police > self.max_police_capacity:
+            warnings.append(f"Police request ({total_police}) exceeded max capacity ({self.max_police_capacity}). Scaling allocation proportionally, prioritizing high-severity hotspots.")
+            scale = self.max_police_capacity / total_police
+            for r in police_recs:
+                original_count = r["count"]
+                r["count"] = max(1 if original_count > 0 else 0, int(original_count * scale))
+                r["reasoning"] += f" (Scaled from {original_count} due to capacity limit)"
+        
+        # Enforce capacity constraints on Barricades
+        total_barricades = sum(r["count"] for r in barricade_recs)
+        if total_barricades > self.max_barricades_capacity:
+            warnings.append(f"Barricades request ({total_barricades}) exceeded max capacity ({self.max_barricades_capacity}). Scaling allocation proportionally.")
+            scale = self.max_barricades_capacity / total_barricades
+            for r in barricade_recs:
+                original_count = r["count"]
+                r["count"] = max(1 if original_count > 0 else 0, int(original_count * scale))
+                r["reasoning"] += f" (Scaled from {original_count} due to capacity limit)"
+                
+        # Enforce capacity constraints on Marshals
+        total_marshals = sum(r["count"] for r in marshal_recs)
+        if total_marshals > self.max_marshals_capacity:
+            warnings.append(f"Marshals request ({total_marshals}) exceeded max capacity ({self.max_marshals_capacity}). Scaling allocation proportionally.")
+            scale = self.max_marshals_capacity / total_marshals
+            for r in marshal_recs:
+                original_count = r["count"]
+                r["count"] = max(1 if original_count > 0 else 0, int(original_count * scale))
+                r["reasoning"] += f" (Scaled from {original_count} due to capacity limit)"
+
         recommendations: Dict[str, Any] = {
-            "police": self._recommend_police(event, hotspots),
-            "barricades": self._recommend_barricades(event, hotspots),
-            "marshals": self._recommend_marshals(event, hotspots),
-            "emergency_routes": self._recommend_emergency_routes(hotspots, forecasts)
+            "police": police_recs,
+            "barricades": barricade_recs,
+            "marshals": marshal_recs,
+            "emergency_routes": self._recommend_emergency_routes(hotspots, forecasts),
+            "warnings": warnings
         }
         recommendations["reasoning"] = self._generate_reasoning(event, hotspots, recommendations)
         return recommendations
@@ -52,4 +95,6 @@ class ResourceRecommender:
         total_police = sum(r["count"] for r in recs.get("police", []))
         total_barricades = sum(r["count"] for r in recs.get("barricades", []))
         parts.append(f"Recommended: {total_police} officers, {total_barricades} barricades")
+        if recs.get("warnings"):
+            parts.append("RESOURCE CONSTRAINTS ACTIVE")
         return " | ".join(parts)

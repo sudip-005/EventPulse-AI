@@ -19,22 +19,48 @@ class SimulationService:
             raise ValueError("Event not found")
             
         event_lat, event_lon = self._get_event_coordinates(event)
-        # Build base event dict
         base_event = {
             "id": str(event.id),
             "name": event.name,
             "event_type": event.event_type,
             "estimated_attendance": event.estimated_attendance or 0,
-            "impact_score": event.impact_score,
-            "risk_score": event.risk_score,
+            "impact_score": event.impact_score or 45.0,
+            "risk_score": event.risk_score or 45.0,
             "start_time": event.start_time,
             "end_time": event.end_time,
             "location": (event_lat, event_lon)
         }
+        
+        # Load roads from DB
+        from app.models.road import Road
+        from app.geospatial.routing import parse_linestring_wkt
+        
+        db_roads = self.db.query(
+            Road.road_id,
+            Road.name,
+            Road.speed_limit_kmh,
+            Road.capacity,
+            Road.length_meters,
+            func.ST_AsText(Road.geometry).label("geom_wkt")
+        ).all()
+        
+        road_network = []
+        for r in db_roads:
+            coords = parse_linestring_wkt(r.geom_wkt)
+            road_network.append({
+                "road_id": r.road_id,
+                "name": r.name,
+                "speed_limit_kmh": r.speed_limit_kmh or 50,
+                "capacity": r.capacity or 1000,
+                "length_meters": r.length_meters or 100.0,
+                "coordinates": coords
+            })
+            
         # Simulate
         result = self.simulator.simulate_scenario(
-            base_event, scenario_params, road_network=[], traffic_data=[]
+            base_event, scenario_params, road_network=road_network
         )
+        
         # Save simulation
         sim = Simulation(
             id=uuid.uuid4(),
@@ -51,12 +77,13 @@ class SimulationService:
         self.db.add(sim)
         self.db.commit()
         self.db.refresh(sim)
+        
         return SimulationResponse(
             id=str(sim.id),
             event_id=event_id,
             name=sim.name,
             scenario_params=sim.scenario_params,
-            predicted_congestion=sim.predicted_congestion,
+            predicted_congestion={"forecasts": sim.predicted_congestion}, # wrap in dict to match schema Dict[str, Any]
             predicted_hotspots=sim.predicted_hotspots,
             status=sim.status,
             created_at=sim.created_at,

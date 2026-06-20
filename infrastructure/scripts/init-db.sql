@@ -65,22 +65,24 @@ CREATE INDEX idx_traffic_time ON traffic_data (timestamp DESC);
 -- Predictions
 CREATE TABLE predictions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_id UUID REFERENCES events(id),
-    road_id VARCHAR(100) REFERENCES roads(road_id),
+    event_id UUID REFERENCES events(id) ON DELETE CASCADE,
     prediction_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     forecast_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    congestion_score FLOAT,
-    predicted_speed FLOAT,
-    predicted_volume INTEGER,
-    delay_minutes INTEGER,
+    impact_score FLOAT,
+    impact_level VARCHAR(20),
+    expected_duration_minutes FLOAT,
+    closure_probability FLOAT,
+    risk_score FLOAT,
     confidence FLOAT,
+    top_factor_1 VARCHAR(100),
+    top_factor_2 VARCHAR(100),
+    top_factor_3 VARCHAR(100),
     model_version VARCHAR(50),
     features_used JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE INDEX idx_predictions_event ON predictions (event_id);
-CREATE INDEX idx_predictions_road_time ON predictions (road_id, forecast_timestamp);
 CREATE INDEX idx_predictions_forecast ON predictions (forecast_timestamp);
 
 -- Hotspots
@@ -131,10 +133,10 @@ CREATE INDEX idx_recommendations_event ON recommendations (event_id);
 -- Learning Records
 CREATE TABLE learning_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_id UUID REFERENCES events(id),
-    prediction_id UUID REFERENCES predictions(id),
-    predicted_congestion FLOAT,
-    actual_congestion FLOAT,
+    event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+    prediction_id UUID,
+    predicted_impact FLOAT,
+    actual_impact FLOAT,
     error FLOAT,
     mae FLOAT,
     rmse FLOAT,
