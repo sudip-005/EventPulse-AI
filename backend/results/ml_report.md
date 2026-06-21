@@ -1,36 +1,38 @@
 # EventPulse AI - Machine Learning Model Results
 
-Generated at: 2026-06-21 01:32:34
+Generated at: 2026-06-21 16:56:31
 
 ## 1. Event Duration Regressor (XGBRegressor)
 Predicts the expected resolution time of the incident in minutes.
 
-- **Mean Absolute Error (MAE)**: 71.55 minutes (CV: 64.84 +/- 4.99)
-- **Root Mean Squared Error (RMSE)**: 114.01 minutes
-- **Mean Absolute Percentage Error (MAPE)**: 123.86%
-- **R^2 Score**: 0.6903
+- **Mean Absolute Error (MAE)**: 71.83 minutes (CV: 65.38 +/- 4.81)
+- **Root Mean Squared Error (RMSE)**: 113.71 minutes
+- **Mean Absolute Percentage Error (MAPE)**: 124.10%
+- **R^2 Score**: 0.6919
 
 ### Duration Feature Importances
 | Feature | Importance |
 | :--- | :--- |
-| `event_type_encoded` | 0.4101 |
-| `average_resolution_time` | 0.3415 |
-| `precipitation` | 0.0616 |
-| `is_raining` | 0.0450 |
-| `is_rush_hour` | 0.0165 |
+| `event_type_encoded` | 0.3928 |
+| `average_resolution_time` | 0.3316 |
+| `is_raining` | 0.0662 |
+| `precipitation` | 0.0505 |
+| `is_rush_hour` | 0.0164 |
 | `longitude` | 0.0140 |
-| `priority_encoded` | 0.0138 |
-| `corridor_encoded` | 0.0131 |
-| `hour` | 0.0120 |
-| `latitude` | 0.0118 |
-| `estimated_attendance` | 0.0101 |
-| `zone_encoded` | 0.0091 |
-| `geohash` | 0.0089 |
-| `day_of_week` | 0.0088 |
-| `month` | 0.0073 |
-| `junction_encoded` | 0.0057 |
-| `requires_road_closure` | 0.0056 |
-| `is_weekend` | 0.0051 |
+| `hour` | 0.0121 |
+| `latitude` | 0.0119 |
+| `corridor_encoded` | 0.0117 |
+| `priority_encoded` | 0.0117 |
+| `estimated_attendance` | 0.0103 |
+| `zone_incident_density` | 0.0091 |
+| `geohash` | 0.0091 |
+| `month` | 0.0085 |
+| `is_weekend` | 0.0083 |
+| `day_of_week` | 0.0082 |
+| `zone_encoded` | 0.0081 |
+| `junction_incident_density` | 0.0076 |
+| `junction_encoded` | 0.0064 |
+| `requires_road_closure` | 0.0055 |
 | `temperature` | 0.0000 |
 | `historical_event_frequency` | 0.0000 |
 
@@ -65,4 +67,6 @@ Predicts the categorical severity rating (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
 | `temperature` | 0.0000 |
 | `is_raining` | 0.0000 |
 | `historical_event_frequency` | 0.0000 |
+| `zone_incident_density` | 0.0000 |
+| `junction_incident_density` | 0.0000 |
 

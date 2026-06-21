@@ -13,7 +13,9 @@ class RoadForecast(BaseModel):
     congestion_score: float
     predicted_speed: float
     delay_minutes: float
+    vehicle_density: Optional[float] = None   # vehicles per km (estimated)
     coordinates: List[Tuple[float, float]]
+
 
 class ForecastResponse(BaseModel):
     event_id: str

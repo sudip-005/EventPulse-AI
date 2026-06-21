@@ -13,7 +13,8 @@ def load_training_data(db: Session) -> pd.DataFrame:
     Implements date fallback logic, cause-to-type category mapping, outlier clipping,
     weather/attendance imputation, and upsampling/downsampling to resolve class imbalance.
     """
-    default_path = r"C:\Users\SUDIP MANNA\Downloads\Astram event data_anonymized - Astram event data_anonymizedb40ac87.csv"
+    # Use environment variable first; fallback to dataset placed next to data_loader.py
+    default_path = os.path.join(os.path.dirname(__file__), "astram_event_data.csv")
     csv_path = os.getenv("TRAINING_DATA_PATH", default_path)
     
     # 1. Load the raw dataset
@@ -40,13 +41,41 @@ def load_training_data(db: Session) -> pd.DataFrame:
                     lat, lon = 19.0760, 72.8777
             except Exception:
                 lat, lon = 19.0760, 72.8777
+            # Dynamic priority based on risk_score or event_type
+            p_val = "Medium"
+            if getattr(e, "risk_score", None) is not None:
+                if e.risk_score >= 85:
+                    p_val = "Critical"
+                elif e.risk_score >= 60:
+                    p_val = "High"
+                elif e.risk_score >= 30:
+                    p_val = "Medium"
+                else:
+                    p_val = "Low"
+            else:
+                e_type = str(e.event_type).lower()
+                if "political" in e_type or "rally" in e_type or "strike" in e_type:
+                    p_val = "High"
+                elif "concert" in e_type or "sports" in e_type or "marathon" in e_type:
+                    p_val = "Medium"
+                else:
+                    p_val = "Low"
+
+            # Dynamic road closure requirements
+            e_type = str(e.event_type).lower()
+            requires_closure = False
+            if "marathon" in e_type or "rally" in e_type or "strike" in e_type:
+                requires_closure = True
+            elif e.estimated_attendance and e.estimated_attendance > 5000:
+                requires_closure = True
+
             data.append({
                 "start_datetime": e.start_time,
                 "resolved_datetime": e.end_time,
                 "estimated_attendance": e.estimated_attendance or 1000,
                 "event_type": e.event_type,
-                "priority": "Medium",
-                "requires_road_closure": False,
+                "priority": p_val,
+                "requires_road_closure": requires_closure,
                 "temperature": 25.0,
                 "precipitation": 0.0,
                 "is_raining": 0.0,

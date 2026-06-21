@@ -49,13 +49,23 @@ class LearningService:
         ) for r in records]
 
     async def retrain_model(self, model_version: Optional[str] = None) -> dict:
-        # Trigger retraining pipeline
+        """Trigger retraining pipeline on all available training data."""
         from app.ml.trainer import XGBoostTrainer
-        trainer = XGBoostTrainer()
-        # Would need to load historical data
-        # For demo, trigger train on synthetic dataset
-        df = load_synthetic_and_train(self.db)
-        return {"message": "Retraining triggered", "model_version": model_version or "v1.1"}
+        from app.ml.data_loader import load_training_data
+        try:
+            df = load_training_data(self.db)
+            if df.empty:
+                return {"error": "No training data available", "model_version": model_version or "v1.0"}
+            trainer = XGBoostTrainer()
+            metrics = trainer.train(df)
+            new_version = model_version or "v1.1"
+            return {
+                "message": "Retraining completed successfully",
+                "model_version": new_version,
+                "metrics": metrics
+            }
+        except Exception as e:
+            return {"error": str(e), "model_version": model_version or "v1.0"}
 
 def load_synthetic_and_train(db: Session) -> dict:
     from app.ml.data_loader import load_training_data

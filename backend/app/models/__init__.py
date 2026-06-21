@@ -6,3 +6,4 @@ from .hotspot import Hotspot
 from .simulation import Simulation
 from .recommendation import Recommendation
 from .learning_record import LearningRecord
+from .traffic_data import TrafficData

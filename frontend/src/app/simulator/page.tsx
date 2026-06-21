@@ -32,12 +32,15 @@ export default function SimulatorPage() {
     const [attendanceMult, setAttendanceMult] = useState(1.2);
     const [rain, setRain] = useState(false);
     const [closedRoads, setClosedRoads] = useState<string[]>([]);
+    const [availableRoads, setAvailableRoads] = useState<{road_id: string; name: string}[]>([]);
     const [incidentLat, setIncidentLat] = useState<number | null>(null);
     const [incidentLon, setIncidentLon] = useState<number | null>(null);
     
     const [loading, setLoading] = useState(false);
     const [simulationResult, setSimulationResult] = useState<any>(null);
     const [roadNetwork, setRoadNetwork] = useState<any>(null);
+    const [primaryRoute, setPrimaryRoute] = useState<[number, number][]>([]);
+    const [alternativeRoutes, setAlternativeRoutes] = useState<[number, number][][]>([]);
 
     // Load available events and road network
     useEffect(() => {
@@ -55,6 +58,12 @@ export default function SimulatorPage() {
                 if (resRoads.ok) {
                     const data = await resRoads.json();
                     setRoadNetwork(data);
+                    // Extract real road IDs and names for closure checkboxes
+                    const roads = (data.features || []).slice(0, 15).map((f: any) => ({
+                        road_id: f.properties?.road_id || "",
+                        name: f.properties?.name || f.properties?.road_id || "Unknown Road"
+                    })).filter((r: any) => r.road_id);
+                    setAvailableRoads(roads);
                 }
             } catch (err) {
                 console.error("Error loading simulator initial data:", err);
@@ -84,6 +93,30 @@ export default function SimulatorPage() {
             if (res.ok) {
                 const data = await res.json();
                 setSimulationResult(data);
+
+                // Compute diversion routes from event epicenter
+                const activeEv = events.find(e => e.id === selectedEventId);
+                if (activeEv) {
+                    const [eLon, eLat] = activeEv.location.coordinates;
+                    const routeRes = await fetch("/api/v1/routes/find", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            origin: [eLat, eLon],
+                            destination: [eLat + 0.03, eLon + 0.03],
+                            num_routes: 3,
+                            avoid_hotspots: true,
+                            event_id: selectedEventId
+                        })
+                    });
+                    if (routeRes.ok) {
+                        const routeData = await routeRes.json();
+                        if (routeData.length > 0 && routeData[0].primary?.coordinates) {
+                            setPrimaryRoute(routeData[0].primary.coordinates);
+                            setAlternativeRoutes(routeData[0].alternatives?.map((a: any) => a.coordinates) || []);
+                        }
+                    }
+                }
             } else {
                 alert("Failed to compute simulation");
             }
@@ -214,22 +247,24 @@ export default function SimulatorPage() {
                         )}
                     </div>
 
-                    {/* 5. Road Closures */}
+                    {/* 5. Road Closures - loaded from real road network */}
                     <div className="space-y-1 flex-1 flex flex-col min-h-[150px]">
-                        <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block">Barricade & Closure Layout</span>
+                        <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block">Barricade &amp; Closure Layout</span>
                         <div className="border border-slate-800 rounded-xl bg-slate-950/60 p-2 space-y-1.5 flex-1 overflow-y-auto max-h-[150px] scrollbar-thin">
-                            {Array.from({ length: 10 }).map((_, i) => {
-                                const roadId = `road_0_${i}`; // Sample roads
-                                const isChecked = closedRoads.includes(roadId);
+                            {availableRoads.length === 0 && (
+                                <span className="text-[10px] text-slate-600 italic">Loading road network...</span>
+                            )}
+                            {availableRoads.map((road) => {
+                                const isChecked = closedRoads.includes(road.road_id);
                                 return (
-                                    <label key={roadId} className="flex items-center gap-2 text-[10px] text-slate-400 hover:text-slate-200 cursor-pointer">
+                                    <label key={road.road_id} className="flex items-center gap-2 text-[10px] text-slate-400 hover:text-slate-200 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={isChecked}
-                                            onChange={() => handleRoadToggle(roadId)}
+                                            onChange={() => handleRoadToggle(road.road_id)}
                                             className="rounded bg-slate-950 border-slate-800 text-blue-500 focus:ring-0"
                                         />
-                                        Road 0-{i} (Arterial segment)
+                                        <span className="truncate" title={road.road_id}>{road.name}</span>
                                     </label>
                                 );
                             })}
@@ -289,7 +324,7 @@ export default function SimulatorPage() {
                     <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-2 flex-1 backdrop-blur-xl relative min-h-[400px]">
                         <div className="absolute top-4 left-4 z-[1000] bg-slate-950/85 border border-slate-800 rounded-xl px-3 py-1.5 backdrop-blur-md text-[10px] flex items-center gap-1.5 text-slate-400">
                             <Info className="w-3.5 h-3.5 text-blue-500" />
-                            Interact on the map. Red lines show simulated bottlenecks.
+                            Click map to place incident. Red=congestion, Green=primary diversion.
                         </div>
 
                         <div className="w-full h-full min-h-[420px]">
@@ -300,11 +335,14 @@ export default function SimulatorPage() {
                                 hotspots={simulationResult ? simulationResult.predicted_hotspots : []}
                                 roadNetwork={roadNetwork}
                                 roadForecasts={simulationResult ? simulationResult.predicted_congestion.forecasts : []}
+                                primaryRoute={primaryRoute}
+                                alternativeRoutes={alternativeRoutes}
                                 onMapClick={handleMapClick}
                                 resources={simulationResult ? [
                                     ...(simulationResult.recommendations.police || []).map((r: any) => ({ ...r, resource_type: "Police" })),
                                     ...(simulationResult.recommendations.barricades || []).map((r: any) => ({ ...r, resource_type: "Barricades" })),
-                                    ...(simulationResult.recommendations.marshals || []).map((r: any) => ({ ...r, resource_type: "Marshals" }))
+                                    ...(simulationResult.recommendations.marshals || []).map((r: any) => ({ ...r, resource_type: "Marshals" })),
+                                    ...(simulationResult.recommendations.emergency_vehicles || []).map((r: any) => ({ ...r, resource_type: "Ambulance" }))
                                 ] : []}
                             />
                         </div>

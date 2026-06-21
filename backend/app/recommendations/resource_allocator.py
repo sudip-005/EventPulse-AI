@@ -5,17 +5,20 @@ class ResourceRecommender:
         self.police_per_1000_attendees = 2
         self.barricades_per_1000_attendees = 5
         self.marshals_per_500_attendees = 1
+        self.emergency_vehicles_per_severity = 1   # per hotspot severity level
         
         # Max capacity constraints
         self.max_police_capacity = 50
         self.max_barricades_capacity = 100
         self.max_marshals_capacity = 30
+        self.max_emergency_vehicles = 10
 
     def recommend_resources(self, event: Dict, hotspots: List[Dict], forecasts: List[Dict]) -> Dict:
         # Calculate raw allocations
         police_recs = self._recommend_police(event, hotspots)
         barricade_recs = self._recommend_barricades(event, hotspots)
         marshal_recs = self._recommend_marshals(event, hotspots)
+        emergency_vehicle_recs = self._recommend_emergency_vehicles(event, hotspots, forecasts)
         
         warnings = []
         
@@ -53,6 +56,7 @@ class ResourceRecommender:
             "police": police_recs,
             "barricades": barricade_recs,
             "marshals": marshal_recs,
+            "emergency_vehicles": emergency_vehicle_recs,
             "emergency_routes": self._recommend_emergency_routes(hotspots, forecasts),
             "warnings": warnings
         }
@@ -88,13 +92,51 @@ class ResourceRecommender:
         avoid = [(h["center"], h["radius_meters"]*1.5) for h in hotspots if h["severity"] >= 3]
         return [{"route_id": "emergency_1", "avoid_areas": avoid, "reasoning": "Avoid severe hotspots"}]
 
+    def _recommend_emergency_vehicles(self, event: Dict, hotspots: List[Dict], forecasts: List[Dict]) -> List[Dict]:
+        """Recommend ambulances and fire tenders based on event size and hotspot severity."""
+        recs = []
+        # Base: 1 ambulance per 10,000 attendees
+        attendance = event.get("estimated_attendance", 0)
+        base_ambulances = max(1, int(attendance / 10000))
+        
+        # Add 1 emergency vehicle per high-severity hotspot
+        critical_hotspots = [h for h in hotspots if h.get("severity", 0) >= 4]
+        for i, h in enumerate(critical_hotspots[:3]):
+            recs.append({
+                "location": h["center"],
+                "count": base_ambulances + self.emergency_vehicles_per_severity * h["severity"],
+                "vehicle_type": "ambulance",
+                "priority": h["severity"],
+                "reasoning": f"Ambulance pre-positioned at critical hotspot severity {h['severity']}/5"
+            })
+        
+        # Always recommend at least 1 command ambulance near event
+        if not recs:
+            recs.append({
+                "location": event.get("location", (19.0760, 72.8777)),
+                "count": base_ambulances,
+                "vehicle_type": "ambulance",
+                "priority": 2,
+                "reasoning": f"Base ambulance deployment for {attendance:,} attendees"
+            })
+        
+        # Apply max constraint
+        total = sum(r["count"] for r in recs)
+        if total > self.max_emergency_vehicles:
+            scale = self.max_emergency_vehicles / total
+            for r in recs:
+                r["count"] = max(1, int(r["count"] * scale))
+        
+        return recs
+
     def _generate_reasoning(self, event: Dict, hotspots: List[Dict], recs: Dict) -> str:
         parts = [f"Event '{event.get('name', 'Unknown')}' with {event.get('estimated_attendance', 0)} attendees"]
         if hotspots:
             parts.append(f"Detected {len(hotspots)} congestion hotspots")
         total_police = sum(r["count"] for r in recs.get("police", []))
         total_barricades = sum(r["count"] for r in recs.get("barricades", []))
-        parts.append(f"Recommended: {total_police} officers, {total_barricades} barricades")
+        total_ev = sum(r["count"] for r in recs.get("emergency_vehicles", []))
+        parts.append(f"Recommended: {total_police} officers, {total_barricades} barricades, {total_ev} emergency vehicles")
         if recs.get("warnings"):
             parts.append("RESOURCE CONSTRAINTS ACTIVE")
         return " | ".join(parts)

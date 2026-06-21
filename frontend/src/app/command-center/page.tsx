@@ -39,6 +39,7 @@ export default function CommandCenter() {
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [loading, setLoading] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [forecastData, setForecastData] = useState<any>(null);
 
     // Event form state
     const [name, setName] = useState("");
@@ -110,6 +111,7 @@ export default function CommandCenter() {
                     const prediction = Array.isArray(data) ? data[0] : data;
                     if (prediction && prediction.roads) {
                         setRoadForecasts(prediction.roads);
+                        setForecastData(prediction);
                     }
                 }
                 // 2. Fetch hotspots
@@ -332,7 +334,8 @@ export default function CommandCenter() {
                                     <option value="concert">Concert</option>
                                     <option value="sports">Sports Match</option>
                                     <option value="festival">Festival</option>
-                                    <option value="protest">Protest</option>
+                                    <option value="marathon">Marathon / Parade</option>
+                                    <option value="protest">Protest / Rally</option>
                                     <option value="accident">Accident</option>
                                     <option value="construction">Construction</option>
                                 </select>
@@ -392,6 +395,19 @@ export default function CommandCenter() {
                     <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex-1 flex flex-col backdrop-blur-xl">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Monitor Feed</span>
                         <div className="space-y-2 flex-1 overflow-y-auto max-h-[250px] pr-1">
+                            {/* Skeleton loading state */}
+                            {events.length === 0 && ["", "", ""].map((_, i) => (
+                                <div key={i} className="p-3 rounded-xl border border-slate-800/60 bg-slate-950/40 animate-pulse">
+                                    <div className="flex items-center justify-between">
+                                        <div className="h-2.5 bg-slate-800 rounded w-28" />
+                                        <div className="h-2 bg-slate-800 rounded w-12" />
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <div className="h-2 bg-slate-800/60 rounded w-16" />
+                                        <div className="h-2 bg-slate-800/60 rounded w-14" />
+                                    </div>
+                                </div>
+                            ))}
                             {events.map((e) => {
                                 const isSelected = selectedEvent?.id === e.id;
                                 return (
@@ -527,6 +543,63 @@ export default function CommandCenter() {
 
                 {/* 4. RIGHT PANE: AI Recommendations & Route statistics */}
                 <div className="col-span-12 lg:col-span-3 space-y-6 flex flex-col h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-800">
+
+                    {/* Forecast Metrics Panel */}
+                    {forecastData && (
+                        <div className="bg-slate-900/40 border border-cyan-500/20 rounded-2xl p-4 backdrop-blur-xl">
+                            <div className="flex items-center gap-2 mb-3 text-xs font-bold text-slate-300">
+                                <TrendingUp className="w-4 h-4 text-cyan-400" />
+                                AI Forecast Metrics
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-slate-950/60 rounded-xl p-2.5">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider">Impact Score</div>
+                                    <div className={`text-lg font-black mt-0.5 ${
+                                        forecastData.impact_score >= 70 ? "text-red-400" :
+                                        forecastData.impact_score >= 40 ? "text-amber-400" : "text-emerald-400"
+                                    }`}>{forecastData.impact_score?.toFixed(0)}%</div>
+                                </div>
+                                <div className="bg-slate-950/60 rounded-xl p-2.5">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider">Impact Level</div>
+                                    <div className={`text-sm font-bold mt-0.5 ${
+                                        forecastData.impact_level === "CRITICAL" ? "text-red-500" :
+                                        forecastData.impact_level === "HIGH" ? "text-orange-400" :
+                                        forecastData.impact_level === "MEDIUM" ? "text-amber-400" : "text-emerald-400"
+                                    }`}>{forecastData.impact_level}</div>
+                                </div>
+                                <div className="bg-slate-950/60 rounded-xl p-2.5">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider">Est. Duration</div>
+                                    <div className="text-sm font-bold text-slate-200 mt-0.5">{forecastData.expected_duration_minutes?.toFixed(0)} min</div>
+                                </div>
+                                <div className="bg-slate-950/60 rounded-xl p-2.5">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider">Closure Risk</div>
+                                    <div className={`text-sm font-bold mt-0.5 ${
+                                        (forecastData.closure_probability || 0) > 0.6 ? "text-red-400" : "text-slate-200"
+                                    }`}>{((forecastData.closure_probability || 0) * 100).toFixed(0)}%</div>
+                                </div>
+                                <div className="bg-slate-950/60 rounded-xl p-2.5">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider">Risk Score</div>
+                                    <div className="text-sm font-bold text-slate-200 mt-0.5">{forecastData.risk_score?.toFixed(0)}</div>
+                                </div>
+                                <div className="bg-slate-950/60 rounded-xl p-2.5">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider">Confidence</div>
+                                    <div className="text-sm font-bold text-emerald-400 mt-0.5">{((forecastData.confidence || 0) * 100).toFixed(0)}%</div>
+                                </div>
+                            </div>
+                            {forecastData.top_factors && forecastData.top_factors.length > 0 && (
+                                <div className="mt-2.5 space-y-1">
+                                    <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-1">Top Contributing Factors</div>
+                                    {forecastData.top_factors.slice(0, 3).map((f: string, i: number) => (
+                                        <div key={i} className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                                            {f}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Route statistics overlay details */}
                     {routeStats && (
                         <div className="bg-slate-900/40 border border-blue-500/20 rounded-2xl p-4 backdrop-blur-xl">

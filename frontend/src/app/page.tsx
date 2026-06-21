@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { 
     Activity, 
     Brain, 
@@ -11,8 +12,19 @@ import {
     Cpu, 
     TrendingUp, 
     ArrowRight, 
-    AlertTriangle 
+    AlertTriangle,
+    Map
 } from "lucide-react";
+
+// Dynamic import for Leaflet-based map (SSR-safe)
+const DigitalTwin = dynamic(() => import("@/components/maps/DigitalTwin"), { 
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-[400px] rounded-2xl bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-500">
+            Loading live map preview...
+        </div>
+    )
+});
 
 export default function LandingPage() {
     return (
@@ -236,6 +248,90 @@ export default function LandingPage() {
                             </div>
                         ))}
                     </div>
+                </div>
+            </section>
+
+            {/* Interactive Live Map Preview Section */}
+            <section id="preview" className="py-24 border-t border-slate-900 bg-slate-950 relative">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center max-w-3xl mx-auto mb-12">
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-500 mb-3">Live Digital Twin</h2>
+                        <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
+                            See the City. In Real Time.
+                        </h3>
+                        <p className="text-slate-400 font-light leading-relaxed">
+                            An interactive map showing Mumbai's road network, event epicenters, and traffic hotspots. Click any road to view congestion metrics. This is the same Digital Twin that powers the Command Center.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        {[
+                            { label: "XGBoost Accuracy", value: "94%", sub: "Impact Classification F1", color: "text-blue-400" },
+                            { label: "Avg. Delay Saved", value: "~71 min", sub: "Per Managed Event", color: "text-emerald-400" },
+                            { label: "Hotspot Recall", value: "DBSCAN", sub: "Spatially Clustered Congestion", color: "text-amber-400" },
+                        ].map((stat, i) => (
+                            <div key={i} className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-xl text-center">
+                                <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
+                                <div className="text-xs font-bold text-slate-300 mt-1">{stat.label}</div>
+                                <div className="text-[10px] text-slate-600 mt-0.5">{stat.sub}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Real Leaflet map with mock event epicenter */}
+                    <div className="rounded-3xl overflow-hidden border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl p-2 shadow-2xl shadow-blue-500/5">
+                        <DigitalTwin
+                            center={[19.0760, 72.8777]}
+                            zoom={13}
+                            events={[
+                                {
+                                    id: "preview-1",
+                                    name: "IPL Match — Wankhede Stadium",
+                                    event_type: "sports",
+                                    location: { type: "Point", coordinates: [72.8254, 18.9388] },
+                                    estimated_attendance: 33000,
+                                    start_time: new Date().toISOString(),
+                                    end_time: new Date().toISOString(),
+                                    impact_score: 78,
+                                    risk_score: 72,
+                                    status: "scheduled",
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                },
+                                {
+                                    id: "preview-2",
+                                    name: "Bandra-Worli Protest March",
+                                    event_type: "protest",
+                                    location: { type: "Point", coordinates: [72.8255, 19.0460] },
+                                    estimated_attendance: 8000,
+                                    start_time: new Date().toISOString(),
+                                    end_time: new Date().toISOString(),
+                                    impact_score: 55,
+                                    risk_score: 60,
+                                    status: "scheduled",
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                }
+                            ]}
+                            hotspots={[
+                                {
+                                    id: "hs-1", cluster_id: "c1",
+                                    center: [19.0220, 72.8340] as [number, number],
+                                    severity: 5, point_count: 12,
+                                    radius_meters: 600, avg_congestion: 88, max_congestion: 92,
+                                    affected_roads: []
+                                },
+                                {
+                                    id: "hs-2", cluster_id: "c2",
+                                    center: [19.0760, 72.8777] as [number, number],
+                                    severity: 3, point_count: 7,
+                                    radius_meters: 400, avg_congestion: 55, max_congestion: 68,
+                                    affected_roads: []
+                                }
+                            ]}
+                        />
+                    </div>
+                    <p className="text-center text-[10px] text-slate-600 mt-3">Preview data — click the Layer Controls to toggle events, hotspots, and heatmap</p>
                 </div>
             </section>
 

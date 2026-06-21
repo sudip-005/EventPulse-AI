@@ -13,6 +13,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import HeatmapLayer from "./HeatmapLayer";
 import type { Event, Hotspot } from "@/lib/types";
 
 // Fix default marker icons for Next.js Leaflet rendering
@@ -64,6 +65,17 @@ export default function DigitalTwin({
     resources = []
 }: DigitalTwinProps) {
     const [pulseRadius, setPulseRadius] = useState(12);
+    const [layers, setLayers] = useState({
+        events: true,
+        hotspots: true,
+        heatmap: false,
+        roads: true,
+        routes: true,
+        resources: true,
+    });
+
+    const toggleLayer = (key: keyof typeof layers) =>
+        setLayers(prev => ({ ...prev, [key]: !prev[key] }));
 
     // Pulse effect animation for hotspots
     useEffect(() => {
@@ -119,12 +131,13 @@ export default function DigitalTwin({
                             const forecast = roadForecasts.find((f) => f.road_id === roadId);
                             const score = forecast ? forecast.congestion_score.toFixed(0) : "15";
                             const speed = forecast ? forecast.predicted_speed.toFixed(0) : "50";
+                            const density = forecast?.vehicle_density != null ? forecast.vehicle_density.toFixed(0) : "N/A";
                             layer.bindPopup(
                                 `<div class="text-xs text-slate-800">
                                     <b>${roadName}</b><br/>
                                     Congestion: <b>${score}%</b><br/>
-                                    Speed Limit: 50 km/h<br/>
-                                    Current Speed: <b>${speed} km/h</b>
+                                    Current Speed: <b>${speed} km/h</b><br/>
+                                    Vehicle Density: <b>${density} veh/km</b>
                                  </div>`
                             );
                         }}
@@ -181,8 +194,21 @@ export default function DigitalTwin({
                     </CircleMarker>
                 )}
 
-                {/* Hotspots (Pulsing glowing red circles) */}
-                {hotspots.map((h) => (
+                {/* Heatmap Layer (Canvas-rendered intensity) */}
+                {layers.heatmap && hotspots.length > 0 && (
+                    <HeatmapLayer
+                        points={hotspots.map(h => ({
+                            lat: h.center[0],
+                            lon: h.center[1],
+                            intensity: h.avg_congestion / 100
+                        }))}
+                        radius={40}
+                        blur={18}
+                    />
+                )}
+
+                {/* Hotspots (Pulsing glowing circles) */}
+                {layers.hotspots && hotspots.map((h) => (
                     <CircleMarker
                         key={h.id || h.cluster_id}
                         center={[h.center[0], h.center[1]]}
@@ -206,7 +232,7 @@ export default function DigitalTwin({
                 ))}
 
                 {/* Event Markers */}
-                {events.map((ev) => (
+                {layers.events && events.map((ev) => (
                     <CircleMarker
                         key={ev.id}
                         center={[ev.location.coordinates[1], ev.location.coordinates[0]]}
@@ -231,7 +257,7 @@ export default function DigitalTwin({
                 ))}
 
                 {/* Resource Deployment Markers */}
-                {resources.map((r, idx) => (
+                {layers.resources && resources.map((r, idx) => (
                     <CircleMarker
                         key={idx}
                         center={r.location}
@@ -255,8 +281,37 @@ export default function DigitalTwin({
                 ))}
             </MapContainer>
 
-            {/* Map Overlay Custom Legend */}
-            <div className="absolute bottom-4 right-4 bg-slate-950/80 border border-slate-800 rounded-xl p-3 backdrop-blur-md z-[1000] text-[10px] space-y-2 max-w-[180px]">
+            {/* Layer Toggle Controls - Top Left */}
+            <div className="absolute top-4 left-4 bg-slate-950/85 border border-slate-800 rounded-xl p-3 backdrop-blur-md z-[1000] text-[10px] space-y-1.5">
+                <div className="font-bold text-slate-400 uppercase tracking-wider text-[9px] mb-2">Layer Controls</div>
+                {([
+                    ["events", "Events", "#3B82F6"],
+                    ["hotspots", "Hotspots", "#EF4444"],
+                    ["heatmap", "Heatmap", "#F59E0B"],
+                    ["roads", "Roads", "#6B7280"],
+                    ["routes", "Routes", "#10B981"],
+                    ["resources", "Resources", "#8B5CF6"],
+                ] as [keyof typeof layers, string, string][]).map(([key, label, color]) => (
+                    <button
+                        key={key}
+                        onClick={() => toggleLayer(key)}
+                        className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left transition-all ${
+                            layers[key]
+                                ? "bg-slate-800/80 text-slate-200"
+                                : "text-slate-600 hover:text-slate-400"
+                        }`}
+                    >
+                        <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: layers[key] ? color : "#374151" }}
+                        />
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Map Overlay Custom Legend - Bottom Right */}
+            <div className="absolute bottom-4 right-4 bg-slate-950/80 border border-slate-800 rounded-xl p-3 backdrop-blur-md z-[1000] text-[10px] space-y-2 max-w-[190px]">
                 <div className="font-bold text-slate-400 uppercase tracking-wider text-[9px] mb-1">Traffic Forecast Legend</div>
                 <div className="flex items-center gap-2">
                     <div className="w-3.5 h-1 rounded bg-[#EF4444]" />
@@ -281,11 +336,15 @@ export default function DigitalTwin({
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3.5 h-1 bg-emerald-500 border-t border-dashed" />
-                    <span className="text-slate-300">Primary Route</span>
+                    <span className="text-slate-300">Primary Diversion</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3.5 h-1 bg-blue-500 border-t border-dashed" />
                     <span className="text-slate-300">Alternative Route</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                    <span className="text-slate-300">Resource / Ambulance</span>
                 </div>
             </div>
         </div>

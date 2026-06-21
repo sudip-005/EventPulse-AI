@@ -43,8 +43,8 @@ class ForecastService:
         event_dict = {
             "estimated_attendance": event.estimated_attendance,
             "event_type": event.event_type,
-            "priority": "Medium",
-            "requires_road_closure": False
+            "priority": getattr(event, "priority", None) or "Medium",
+            "requires_road_closure": getattr(event, "requires_road_closure", False) or False
         }
         weather_dict = {"temperature": 25.0, "precipitation": 0.0}
         
@@ -62,6 +62,9 @@ class ForecastService:
         # Explanations
         top_factors = self.inference._explain(features)
         
+        # Compute confidence from impact score (higher impact = more certain)
+        confidence = round(min(0.75 + (impact_score / 400.0), 0.98), 2)
+        
         # Save Prediction record
         prediction_record = Prediction(
             event_id=event.id,
@@ -72,7 +75,7 @@ class ForecastService:
             expected_duration_minutes=duration_minutes,
             closure_probability=closure_prob,
             risk_score=risk_score,
-            confidence=0.9,
+            confidence=confidence,
             top_factor_1=top_factors[0] if len(top_factors) > 0 else None,
             top_factor_2=top_factors[1] if len(top_factors) > 1 else None,
             top_factor_3=top_factors[2] if len(top_factors) > 2 else None,
@@ -94,7 +97,7 @@ class ForecastService:
             expected_duration_minutes=duration_minutes,
             closure_probability=closure_prob,
             risk_score=risk_score,
-            confidence=0.9,
+            confidence=confidence,
             top_factors=top_factors,
             roads=roads_forecast
         )
@@ -167,12 +170,18 @@ class ForecastService:
             delay = (length_meters / speed_mps - length_meters / speed_limit_mps) / 60.0
             delay = max(delay, 0.0)
             
+            # Vehicle density: estimated from congestion score and road capacity
+            # capacity is vehicles/hour at free flow; at congestion C, density ~ C/100 * capacity / speed_kmh
+            road_capacity = r.capacity or 1800  # default vehicles/hour
+            vehicle_density = round((congestion / 100.0) * road_capacity / max(predicted_speed, 5.0), 1)
+            
             road_forecasts.append(RoadForecast(
                 road_id=r.road_id,
                 name=r.name,
                 congestion_score=congestion,
                 predicted_speed=predicted_speed,
                 delay_minutes=delay,
+                vehicle_density=vehicle_density,
                 coordinates=coords
             ))
             

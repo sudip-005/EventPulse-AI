@@ -26,7 +26,9 @@ class FeatureEngineer:
         "junction_encoded",
         "corridor_encoded",
         "historical_event_frequency",
-        "average_resolution_time"
+        "average_resolution_time",
+        "zone_incident_density",
+        "junction_incident_density",
     ]
 
     @staticmethod
@@ -171,7 +173,10 @@ class FeatureEngineer:
             "junction_encoded": junction_encoded,
             "corridor_encoded": corridor_encoded,
             "historical_event_frequency": freq,
-            "average_resolution_time": avg_dur
+            "average_resolution_time": avg_dur,
+            # Incident density: estimated from event frequency in zone/junction
+            "zone_incident_density": round(freq * zone_encoded / 10.0, 4),
+            "junction_incident_density": round(freq * junction_encoded / 100.0, 4),
         }
         features.update(FeatureEngineer.extract_temporal_features(temporal))
         features.update(FeatureEngineer.extract_weather_features(weather))
@@ -261,5 +266,13 @@ class FeatureEngineer:
         else:
             processed["historical_event_frequency"] = 0.05
             processed["average_resolution_time"] = 120.0
+
+        # Zone and junction incident density (computed from frequency × encoded location)
+        processed["zone_incident_density"] = (
+            processed["historical_event_frequency"] * processed["zone_encoded"] / 10.0
+        ).round(4)
+        processed["junction_incident_density"] = (
+            processed["historical_event_frequency"] * processed["junction_encoded"] / 100.0
+        ).round(4)
 
         return processed[FeatureEngineer.FEATURE_COLUMNS]

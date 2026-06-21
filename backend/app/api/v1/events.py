@@ -98,3 +98,46 @@ async def delete_event(event_id: str, db: Session = Depends(get_db)):
     db.delete(event)
     db.commit()
     return {"detail": "Event deleted"}
+
+
+@router.get("/{event_id}/risk-assessment")
+async def get_risk_assessment(event_id: str, db: Session = Depends(get_db)):
+    """Dedicated risk assessment for an event with breakdown and recommendations."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    risk_score = event.risk_score or 0.0
+    impact_score = event.impact_score or 0.0
+
+    if risk_score >= 75:
+        risk_category = "CRITICAL"
+        recommendation = "Immediate multi-agency coordination required. Deploy maximum resources."
+    elif risk_score >= 55:
+        risk_category = "HIGH"
+        recommendation = "Deploy additional police and traffic marshals. Pre-position emergency vehicles."
+    elif risk_score >= 35:
+        risk_category = "MEDIUM"
+        recommendation = "Standard resource deployment. Monitor hotspots closely."
+    else:
+        risk_category = "LOW"
+        recommendation = "Routine monitoring. Standard traffic management protocols."
+
+    factors = []
+    if event.estimated_attendance and event.estimated_attendance > 10000:
+        factors.append({"factor": "Large attendance", "contribution": "HIGH", "value": event.estimated_attendance})
+    if impact_score > 60:
+        factors.append({"factor": "High predicted impact", "contribution": "HIGH", "value": round(impact_score, 1)})
+    if event.event_type in ["concert", "festival", "sports"]:
+        factors.append({"factor": "High-density event type", "contribution": "MEDIUM", "value": event.event_type})
+
+    return {
+        "event_id": event_id,
+        "event_name": event.name,
+        "risk_score": round(risk_score, 2),
+        "impact_score": round(impact_score, 2),
+        "risk_category": risk_category,
+        "recommendation": recommendation,
+        "contributing_factors": factors,
+        "assessment_timestamp": __import__('datetime').datetime.utcnow().isoformat()
+    }

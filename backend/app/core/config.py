@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "EventPulse AI"
@@ -12,7 +13,8 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "eventpulse"
     DATABASE_URL: Optional[str] = None
     
-    MODEL_PATH: str = "/app/ml/models"
+    # Model path: can be overridden via MODEL_PATH env var; default resolves relative to this file
+    MODEL_PATH: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ml", "models")
     XGBOOST_PARAMS: dict = {
         "n_estimators": 500,
         "learning_rate": 0.3,

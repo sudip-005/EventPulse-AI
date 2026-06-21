@@ -1,11 +1,11 @@
 {
     "duration_model_metrics": {
-        "mean_absolute_error_minutes": 71.54667501466267,
-        "root_mean_squared_error_minutes": 114.01189592301186,
-        "r2_score": 0.6902623012702331,
-        "mean_absolute_percentage_error": 1.2385973575986164,
-        "cv_mae_mean": 64.84422929664778,
-        "cv_mae_std": 4.991408603161524
+        "mean_absolute_error_minutes": 71.83005079286092,
+        "root_mean_squared_error_minutes": 113.7132429758556,
+        "r2_score": 0.6918828851417919,
+        "mean_absolute_percentage_error": 1.240963021037629,
+        "cv_mae_mean": 65.38292884945795,
+        "cv_mae_std": 4.808976823363459
     },
     "impact_model_metrics": {
         "accuracy": 0.94,
@@ -17,24 +17,26 @@
     },
     "feature_importances": {
         "duration_model": {
-            "event_type_encoded": 0.4100553095340729,
-            "average_resolution_time": 0.3414846360683441,
-            "precipitation": 0.0615633949637413,
-            "is_raining": 0.04495188221335411,
-            "is_rush_hour": 0.01652435027062893,
-            "longitude": 0.0140075059607625,
-            "priority_encoded": 0.013781090267002583,
-            "corridor_encoded": 0.013149740174412727,
-            "hour": 0.012001831084489822,
-            "latitude": 0.01182518620043993,
-            "estimated_attendance": 0.01011622417718172,
-            "zone_encoded": 0.009051916189491749,
-            "geohash": 0.008877418003976345,
-            "day_of_week": 0.008816397748887539,
-            "month": 0.007335744332522154,
-            "junction_encoded": 0.005723248235881329,
-            "requires_road_closure": 0.005640294402837753,
-            "is_weekend": 0.005093787331134081,
+            "event_type_encoded": 0.39275842905044556,
+            "average_resolution_time": 0.3316158354282379,
+            "is_raining": 0.06619106978178024,
+            "precipitation": 0.05052737891674042,
+            "is_rush_hour": 0.01644536480307579,
+            "longitude": 0.013964527286589146,
+            "hour": 0.012097441591322422,
+            "latitude": 0.011929860338568687,
+            "corridor_encoded": 0.011706995777785778,
+            "priority_encoded": 0.011667458340525627,
+            "estimated_attendance": 0.010275806300342083,
+            "zone_incident_density": 0.009107409976422787,
+            "geohash": 0.009100021794438362,
+            "month": 0.008483895100653172,
+            "is_weekend": 0.008285203948616982,
+            "day_of_week": 0.00820129830390215,
+            "zone_encoded": 0.008118648082017899,
+            "junction_incident_density": 0.007625523488968611,
+            "junction_encoded": 0.0063982573337852955,
+            "requires_road_closure": 0.0054995594546198845,
             "temperature": 0.0,
             "historical_event_frequency": 0.0
         },
@@ -58,7 +60,9 @@
             "is_weekend": 0.0,
             "temperature": 0.0,
             "is_raining": 0.0,
-            "historical_event_frequency": 0.0
+            "historical_event_frequency": 0.0,
+            "zone_incident_density": 0.0,
+            "junction_incident_density": 0.0
         }
     }
 }
