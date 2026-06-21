@@ -4,7 +4,6 @@ import os
 import pandas as pd
 import numpy as np
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from datetime import datetime, timedelta
 
 def load_training_data(db: Session) -> pd.DataFrame:
@@ -33,14 +32,8 @@ def load_training_data(db: Session) -> pd.DataFrame:
             ])
         data = []
         for e in events:
-            try:
-                res = db.query(func.ST_Y(e.location), func.ST_X(e.location)).filter(Event.id == e.id).first()
-                if res is not None:
-                    lat, lon = float(res[0]), float(res[1])
-                else:
-                    lat, lon = 19.0760, 72.8777
-            except Exception:
-                lat, lon = 19.0760, 72.8777
+            coordinates = e.location.get("coordinates", []) if isinstance(e.location, dict) else []
+            lon, lat = coordinates if len(coordinates) == 2 else (72.8777, 19.0760)
             # Dynamic priority based on risk_score or event_type
             p_val = "Medium"
             if getattr(e, "risk_score", None) is not None:

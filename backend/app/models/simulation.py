@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, JSON, DateTime, Enum
+from sqlalchemy import Column, String, JSON, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
 import uuid
@@ -9,7 +9,7 @@ class Simulation(Base):
     __tablename__ = "simulations"
     
     id: Any = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    event_id: Any = Column(UUID(as_uuid=True), nullable=False)
+    event_id: Any = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
     name: Any = Column(String(255))
     scenario_params: Any = Column(JSON, nullable=False)
     predicted_congestion: Any = Column(JSON)

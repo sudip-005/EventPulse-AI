@@ -33,7 +33,7 @@ def generate_roads():
             road = Road(
                 road_id=road_id,
                 name=f"Road {i}-{j}",
-                geometry=f"LINESTRING({base_lon + j*0.001} {base_lat + i*0.001}, {base_lon + j*0.001 + 0.001} {base_lat + i*0.001})",
+                geometry={"type": "LineString", "coordinates": [[base_lon + j*0.001, base_lat + i*0.001], [base_lon + j*0.001 + 0.001, base_lat + i*0.001]]},
                 length_meters=100.0,
                 speed_limit_kmh=50,
                 capacity=800 + random.randint(0, 400),
@@ -65,7 +65,7 @@ def seed_data():
             name="Sample Concert",
             event_type="concert",
             description="A large concert event",
-            location=f"POINT({72.8777 + 0.002} {19.0760 + 0.002})",
+            location={"type": "Point", "coordinates": [72.8797, 19.0780]},
             address="Mumbai",
             estimated_attendance=15000,
             start_time=datetime.now() + timedelta(days=2, hours=18),

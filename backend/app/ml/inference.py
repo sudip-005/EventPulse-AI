@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import joblib
 import numpy as np
 import pandas as pd
 from typing import Tuple, Dict, Any, List
@@ -9,15 +8,14 @@ from typing import Tuple, Dict, Any, List
 from app.core.config import settings
 from app.ml.features import FeatureEngineer
 from app.services.risk_service import RiskService
+from app.services.model_service import model_registry
 
 class XGBoostInference:
     def __init__(self):
-        try:
-            self.duration_model = joblib.load(os.path.join(settings.MODEL_PATH, "duration_model.pkl"))
-            self.impact_model = joblib.load(os.path.join(settings.MODEL_PATH, "impact_model.pkl"))
-        except FileNotFoundError:
-            self.duration_model = None
-            self.impact_model = None
+        if not model_registry.loaded:
+            model_registry.load()
+        self.duration_model = model_registry.duration_model
+        self.impact_model = model_registry.impact_model
 
     def predict_impact(self, feature_vector: np.ndarray) -> Tuple[float, str]:
         if self.impact_model is None:

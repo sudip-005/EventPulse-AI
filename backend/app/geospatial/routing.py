@@ -1,13 +1,16 @@
 import networkx as nx
 import re
-from typing import List, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple, Optional
 from geopy.distance import geodesic
 
-def parse_linestring_wkt(wkt: str) -> List[Tuple[float, float]]:
-    if not wkt:
+def parse_linestring_wkt(geometry: Any) -> List[Tuple[float, float]]:
+    """Return (lat, lon) pairs from either GeoJSON or legacy WKT."""
+    if not geometry:
         return []
+    if isinstance(geometry, dict):
+        return [(float(lat), float(lon)) for lon, lat in geometry.get("coordinates", [])]
     # Support both LINESTRING and geometry representation
-    match = re.search(r'LINESTRING\s*\((.*)\)', wkt, re.IGNORECASE)
+    match = re.search(r'LINESTRING\s*\((.*)\)', str(geometry), re.IGNORECASE)
     if not match:
         return []
     points_str = match.group(1).split(',')
@@ -28,8 +31,7 @@ class RouteDiversionEngine:
         self.node_coords.clear()
         
         for road in roads:
-            wkt = road["geometry"]
-            coords = parse_linestring_wkt(wkt)
+            coords = parse_linestring_wkt(road["geometry"])
             if not coords:
                 continue
                 

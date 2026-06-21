@@ -9,7 +9,7 @@ from app.schemas.forecast import ForecastRequest, ForecastResponse
 
 router = APIRouter()
 
-@router.post("/", response_model=ForecastResponse)
+@router.post("", response_model=ForecastResponse)
 async def generate_forecast(request: ForecastRequest, db: Session = Depends(get_db)):
     service = ForecastService(db)
     result = await service.generate_forecast(

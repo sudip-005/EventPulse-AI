@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import List
-import json
 from app.api.deps import get_db
 from app.schemas.event import EventCreate, EventResponse, EventUpdate
 from app.services.event_service import EventService
@@ -11,8 +9,7 @@ from app.models.event import Event
 router = APIRouter()
 
 def serialize_event(e: Event, db: Session) -> dict:
-    geom_json = db.query(func.ST_AsGeoJSON(e.location)).scalar()
-    location_dict = json.loads(geom_json) if geom_json else {"type": "Point", "coordinates": [72.8777, 19.0760]}
+    location_dict = e.location or {"type": "Point", "coordinates": [72.8777, 19.0760]}
     return {
         "id": str(e.id),
         "name": e.name,
@@ -30,18 +27,15 @@ def serialize_event(e: Event, db: Session) -> dict:
         "location": location_dict
     }
 
-@router.post("/", response_model=EventResponse)
+@router.post("", response_model=EventResponse)
 async def create_event(event_in: EventCreate, db: Session = Depends(get_db)):
     impact = EventService.calculate_impact_score(event_in)
     risk = EventService.calculate_risk_score(event_in)
-    coords = event_in.location.get("coordinates", [72.8777, 19.0760])
-    location_wkt = f"POINT({coords[0]} {coords[1]})"
-    
     db_event = Event(
         name=event_in.name,
         event_type=event_in.event_type,
         description=event_in.description,
-        location=location_wkt,
+        location=event_in.location,
         address=event_in.address,
         estimated_attendance=event_in.estimated_attendance,
         start_time=event_in.start_time,
@@ -55,7 +49,7 @@ async def create_event(event_in: EventCreate, db: Session = Depends(get_db)):
     db.refresh(db_event)
     return serialize_event(db_event, db)
 
-@router.get("/", response_model=List[EventResponse])
+@router.get("", response_model=List[EventResponse])
 async def list_events(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     events = db.query(Event).offset(skip).limit(limit).all()
     return [serialize_event(e, db) for e in events]
@@ -74,11 +68,7 @@ async def update_event(event_id: str, event_in: EventUpdate, db: Session = Depen
         raise HTTPException(status_code=404, detail="Event not found")
     
     for key, value in event_in.model_dump(exclude_unset=True).items():
-        if key == "location" and value:
-            coords = value.get("coordinates", [72.8777, 19.0760])
-            setattr(event, key, f"POINT({coords[0]} {coords[1]})")
-        else:
-            setattr(event, key, value)
+        setattr(event, key, value)
             
     # Recalculate scores if attendance/time changed
     if "estimated_attendance" in event_in.model_dump(exclude_unset=True) or "start_time" in event_in.model_dump(exclude_unset=True):

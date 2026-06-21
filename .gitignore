@@ -42,6 +42,8 @@ Thumbs.db
 *.pkl
 *.joblib
 *.model
+!backend/app/ml/models/
+!backend/app/ml/models/*.pkl
 
 # Terraform
 *.tfstate*

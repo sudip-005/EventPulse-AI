@@ -1,7 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import List, Tuple, Optional
-import json
 from app.geospatial.routing import RouteDiversionEngine
 from app.models.road import Road
 
@@ -12,17 +10,7 @@ class RouteService:
         self._build_network()
 
     def _build_network(self):
-        roads = self.db.query(
-            Road.road_id,
-            Road.name,
-            Road.from_node,
-            Road.to_node,
-            Road.length_meters,
-            Road.speed_limit_kmh,
-            Road.capacity,
-            Road.one_way,
-            func.ST_AsText(Road.geometry).label("geom_wkt")
-        ).all()
+        roads = self.db.query(Road).all()
         
         road_dicts = []
         for r in roads:
@@ -33,7 +21,7 @@ class RouteService:
                 "speed_limit_kmh": r.speed_limit_kmh,
                 "capacity": r.capacity,
                 "road_id": r.road_id,
-                "geometry": r.geom_wkt,
+                "geometry": r.geometry,
                 "one_way": r.one_way,
                 "congestion": 0  # Default to 0, updated dynamically during forecasts
             })
@@ -97,15 +85,11 @@ class RouteService:
         }]
 
     async def get_road_network_geojson(self) -> dict:
-        roads = self.db.query(
-            Road.road_id,
-            Road.name,
-            func.ST_AsGeoJSON(Road.geometry).label("geom_json")
-        ).all()
+        roads = self.db.query(Road).all()
         
         features = []
         for r in roads:
-            geom = json.loads(r.geom_json) if r.geom_json else {"type": "LineString", "coordinates": []}
+            geom = r.geometry or {"type": "LineString", "coordinates": []}
             features.append({
                 "type": "Feature",
                 "geometry": geom,

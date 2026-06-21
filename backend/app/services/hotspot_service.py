@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import List, Dict, Any, Tuple
 from app.geospatial.clustering import HotspotDetector
 from app.models.hotspot import Hotspot
@@ -50,11 +49,10 @@ class HotspotService:
         # Save to DB and return responses
         results = []
         for c in clusters:
-            center_wkt = f"POINT({c['center'][1]} {c['center'][0]})"
             hotspot = Hotspot(
                 event_id=event_id,
                 cluster_id=c["cluster_id"],
-                center=center_wkt,
+                center={"type": "Point", "coordinates": [c["center"][1], c["center"][0]]},
                 severity=c["severity"],
                 affected_roads=[],
                 radius_meters=c["radius_meters"],
@@ -97,34 +95,16 @@ class HotspotService:
 
     def _get_event_coordinates(self, event: Event) -> Tuple[float, float]:
         """Safely extracts latitude and longitude from an Event geometry point."""
-        try:
-            res = self.db.query(func.ST_Y(event.location), func.ST_X(event.location)).filter(Event.id == event.id).first()
-            if res and res[0] is not None and res[1] is not None:
-                return float(res[0]), float(res[1])
-        except Exception:
-            pass
-            
-        try:
-            if hasattr(event.location, 'y') and hasattr(event.location, 'x'):
-                return float(event.location.y), float(event.location.x)
-        except Exception:
-            pass
-            
+        if isinstance(event.location, dict):
+            coordinates = event.location.get("coordinates", [])
+            if len(coordinates) == 2:
+                return float(coordinates[1]), float(coordinates[0])
         return 19.0760, 72.8777  # Default coordinates
 
     def _get_hotspot_coordinates(self, hotspot: Hotspot) -> Tuple[float, float]:
         """Safely extracts latitude and longitude from a Hotspot center point."""
-        try:
-            res = self.db.query(func.ST_Y(hotspot.center), func.ST_X(hotspot.center)).filter(Hotspot.id == hotspot.id).first()
-            if res and res[0] is not None and res[1] is not None:
-                return float(res[0]), float(res[1])
-        except Exception:
-            pass
-            
-        try:
-            if hasattr(hotspot.center, 'y') and hasattr(hotspot.center, 'x'):
-                return float(hotspot.center.y), float(hotspot.center.x)
-        except Exception:
-            pass
-            
+        if isinstance(hotspot.center, dict):
+            coordinates = hotspot.center.get("coordinates", [])
+            if len(coordinates) == 2:
+                return float(coordinates[1]), float(coordinates[0])
         return 19.0760, 72.8777  # Default coordinates

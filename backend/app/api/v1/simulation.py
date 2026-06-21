@@ -8,6 +8,12 @@ from app.models.simulation import Simulation
 
 router = APIRouter()
 
+
+@router.get("", response_model=List[SimulationResponse])
+async def list_simulations(limit: int = 50, db: Session = Depends(get_db)):
+    records = db.query(Simulation).order_by(Simulation.created_at.desc()).limit(min(limit, 100)).all()
+    return [serialize_simulation(record) for record in records]
+
 def serialize_simulation(sim: Simulation) -> dict:
     predicted_congestion = sim.predicted_congestion
     if isinstance(predicted_congestion, list):

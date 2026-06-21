@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import List, Optional, Tuple
 from app.recommendations.resource_allocator import ResourceRecommender
 from app.models.recommendation import Recommendation
@@ -48,7 +47,7 @@ class RecommendationService:
                     simulation_id=simulation_id,
                     resource_type=res_type,
                     resource_count=item.get("count", 0),
-                    location=f"POINT({item['location'][1]} {item['location'][0]})",
+                    location={"type": "Point", "coordinates": [item["location"][1], item["location"][0]]},
                     reasoning=item.get("reasoning", ""),
                     priority=item.get("priority", 1)
                 )
@@ -78,49 +77,22 @@ class RecommendationService:
         ) for r in recs]
 
     def _get_event_coordinates(self, event: Event) -> Tuple[float, float]:
-        try:
-            res = self.db.query(func.ST_Y(event.location), func.ST_X(event.location)).filter(Event.id == event.id).first()
-            if res and res[0] is not None and res[1] is not None:
-                return float(res[0]), float(res[1])
-        except Exception:
-            pass
-            
-        try:
-            if hasattr(event.location, 'y') and hasattr(event.location, 'x'):
-                return float(event.location.y), float(event.location.x)
-        except Exception:
-            pass
-            
+        if isinstance(event.location, dict):
+            coordinates = event.location.get("coordinates", [])
+            if len(coordinates) == 2:
+                return float(coordinates[1]), float(coordinates[0])
         return 19.0760, 72.8777
 
     def _get_hotspot_coordinates(self, hotspot: Hotspot) -> Tuple[float, float]:
-        try:
-            res = self.db.query(func.ST_Y(hotspot.center), func.ST_X(hotspot.center)).filter(Hotspot.id == hotspot.id).first()
-            if res and res[0] is not None and res[1] is not None:
-                return float(res[0]), float(res[1])
-        except Exception:
-            pass
-            
-        try:
-            if hasattr(hotspot.center, 'y') and hasattr(hotspot.center, 'x'):
-                return float(hotspot.center.y), float(hotspot.center.x)
-        except Exception:
-            pass
-            
+        if isinstance(hotspot.center, dict):
+            coordinates = hotspot.center.get("coordinates", [])
+            if len(coordinates) == 2:
+                return float(coordinates[1]), float(coordinates[0])
         return 19.0760, 72.8777
 
     def _get_recommendation_coordinates(self, rec: Recommendation) -> Tuple[float, float]:
-        try:
-            res = self.db.query(func.ST_Y(rec.location), func.ST_X(rec.location)).filter(Recommendation.id == rec.id).first()
-            if res and res[0] is not None and res[1] is not None:
-                return float(res[0]), float(res[1])
-        except Exception:
-            pass
-            
-        try:
-            if hasattr(rec.location, 'y') and hasattr(rec.location, 'x'):
-                return float(rec.location.y), float(rec.location.x)
-        except Exception:
-            pass
-            
+        if isinstance(rec.location, dict):
+            coordinates = rec.location.get("coordinates", [])
+            if len(coordinates) == 2:
+                return float(coordinates[1]), float(coordinates[0])
         return 19.0760, 72.8777

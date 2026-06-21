@@ -131,13 +131,7 @@ class ForecastService:
         from geopy.distance import geodesic
         
         # Fetch all roads from database
-        roads = self.db.query(
-            Road.road_id,
-            Road.name,
-            Road.speed_limit_kmh,
-            Road.capacity,
-            func.ST_AsText(Road.geometry).label("geom_wkt")
-        ).all()
+        roads = self.db.query(Road).all()
         
         event_lat, event_lon = self._get_event_coordinates(event)
         
@@ -146,7 +140,7 @@ class ForecastService:
         
         road_forecasts = []
         for r in roads:
-            coords = parse_linestring_wkt(r.geom_wkt)
+            coords = parse_linestring_wkt(r.geometry)
             if not coords:
                 continue
             midpoint = coords[len(coords) // 2]
@@ -188,17 +182,8 @@ class ForecastService:
         return road_forecasts
 
     def _get_event_coordinates(self, event: Event) -> Tuple[float, float]:
-        try:
-            res = self.db.query(func.ST_Y(event.location), func.ST_X(event.location)).filter(Event.id == event.id).first()
-            if res and res[0] is not None and res[1] is not None:
-                return float(res[0]), float(res[1])
-        except Exception:
-            pass
-            
-        try:
-            if hasattr(event.location, 'y') and hasattr(event.location, 'x'):
-                return float(event.location.y), float(event.location.x)
-        except Exception:
-            pass
-            
+        if isinstance(event.location, dict):
+            coordinates = event.location.get("coordinates", [])
+            if len(coordinates) == 2:
+                return float(coordinates[1]), float(coordinates[0])
         return 19.0760, 72.8777

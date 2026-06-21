@@ -1,11 +1,17 @@
-from pydantic_settings import BaseSettings
-from typing import Optional
 import os
+from typing import Optional
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=True)
+
     PROJECT_NAME: str = "EventPulse AI"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    ENV: str = "development"
+    SECRET_KEY: str = "change-me-in-production"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
     
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
@@ -26,8 +32,9 @@ class Settings(BaseSettings):
     
     DEFAULT_CITY: str = "mumbai"
     DEFAULT_RADIUS_KM: int = 10
-    
-    class Config:
-        env_file = ".env"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip().rstrip("/") for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 settings = Settings()

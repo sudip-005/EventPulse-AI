@@ -1,8 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
 class LearningRecordResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     id: str
     event_id: str
     prediction_id: str
@@ -15,4 +17,6 @@ class LearningRecordResponse(BaseModel):
     created_at: datetime
 
 class RetrainingRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     model_version: Optional[str] = None

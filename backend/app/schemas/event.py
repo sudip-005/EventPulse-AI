@@ -1,7 +1,6 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
-from geoalchemy2 import WKTElement
 
 class EventBase(BaseModel):
     name: str
@@ -15,7 +14,7 @@ class EventBase(BaseModel):
 class EventCreate(EventBase):
     location: dict  # {"type": "Point", "coordinates": [lon, lat]}
 
-    @validator('location')
+    @field_validator('location')
     def validate_location(cls, v):
         if not isinstance(v, dict) or v.get('type') != 'Point' or len(v.get('coordinates', [])) != 2:
             raise ValueError('Location must be GeoJSON Point')
@@ -33,6 +32,8 @@ class EventUpdate(BaseModel):
     status: Optional[str] = None
 
 class EventResponse(EventBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     impact_score: float
     risk_score: float
@@ -40,6 +41,3 @@ class EventResponse(EventBase):
     created_at: datetime
     updated_at: datetime
     location: dict  # GeoJSON
-
-    class Config:
-        orm_mode = True

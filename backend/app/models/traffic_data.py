@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean
+from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
 import uuid
@@ -11,7 +11,7 @@ class TrafficData(Base):
 
     id: Any = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     road_id: Any = Column(String(100), nullable=False, index=True)
-    event_id: Any = Column(UUID(as_uuid=True), nullable=True, index=True)
+    event_id: Any = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Observed measurements
     observed_at: Any = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

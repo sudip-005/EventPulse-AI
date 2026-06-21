@@ -1,6 +1,5 @@
-from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime
+from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
-from geoalchemy2 import Geography
 from app.core.database import Base
 import uuid
 from datetime import datetime, timezone
@@ -12,7 +11,7 @@ class Road(Base):
     id: Any = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     road_id: Any = Column(String(100), unique=True, nullable=False)
     name: Any = Column(String(255))
-    geometry: Any = Column(Geography('LINESTRING', srid=4326), nullable=False)
+    geometry: Any = Column(JSON, nullable=False)
     length_meters: Any = Column(Float)
     speed_limit_kmh: Any = Column(Integer)
     capacity: Any = Column(Integer)

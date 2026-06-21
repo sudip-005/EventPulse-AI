@@ -7,6 +7,11 @@ from app.services.analytics_service import AnalyticsService
 router = APIRouter()
 
 
+@router.get("")
+async def get_analytics(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    return AnalyticsService(db).get_overview()
+
+
 @router.get("/overview")
 async def get_analytics_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """High-level system KPIs: total events, predictions, hotspots, average scores."""
