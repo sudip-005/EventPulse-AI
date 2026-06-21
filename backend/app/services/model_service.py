@@ -25,15 +25,34 @@ class ModelRegistry:
         impact_path = model_dir / "impact_model.pkl"
         congestion_path = model_dir / "congestion_xgb.pkl"
 
-        self.duration_model = joblib.load(duration_path) if duration_path.exists() else None
-        # congestion_xgb.pkl is supported as a deployment-compatible alias.
-        selected_impact_path = congestion_path if congestion_path.exists() else impact_path
-        self.impact_model = joblib.load(selected_impact_path) if selected_impact_path.exists() else None
+        try:
+            self.duration_model = joblib.load(duration_path) if duration_path.exists() else None
+        except Exception as e:
+            logger.error("Failed to load duration model: %s", e)
+            self.duration_model = None
 
-        encoders_path = model_dir / "encoders.pkl"
-        scaler_path = model_dir / "scaler.pkl"
-        self.encoders = joblib.load(encoders_path) if encoders_path.exists() else None
-        self.scaler = joblib.load(scaler_path) if scaler_path.exists() else None
+        try:
+            # congestion_xgb.pkl is supported as a deployment-compatible alias.
+            selected_impact_path = congestion_path if congestion_path.exists() else impact_path
+            self.impact_model = joblib.load(selected_impact_path) if selected_impact_path.exists() else None
+        except Exception as e:
+            logger.error("Failed to load impact model: %s", e)
+            self.impact_model = None
+
+        try:
+            encoders_path = model_dir / "encoders.pkl"
+            self.encoders = joblib.load(encoders_path) if encoders_path.exists() else None
+        except Exception as e:
+            logger.error("Failed to load encoders: %s", e)
+            self.encoders = None
+
+        try:
+            scaler_path = model_dir / "scaler.pkl"
+            self.scaler = joblib.load(scaler_path) if scaler_path.exists() else None
+        except Exception as e:
+            logger.error("Failed to load scaler: %s", e)
+            self.scaler = None
+
         self.loaded = self.duration_model is not None and self.impact_model is not None
 
         if self.loaded:
